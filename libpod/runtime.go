@@ -91,6 +91,15 @@ type Runtime struct {
 	workerChannel chan func()
 	workerGroup   sync.WaitGroup
 
+	// rebindMu guards rebindContainers, the set of containers whose rebind
+	// devices the daemon's global monitor keeps valid across a USB power
+	// cycle (see device_monitor.go).
+	rebindMu           sync.Mutex
+	rebindContainers   map[string]*rebindContainerState
+	rebindMonitorDone  chan struct{}
+	rebindMonitorGroup sync.WaitGroup
+	rebindMonitorOnce  sync.Once
+
 	// syslog describes whenever logrus should log to the syslog as well.
 	// Note that the syslog hook will be enabled early in cmd/podman/syslog_linux.go
 	// This bool is just needed so that we can set it for netavark interface.
@@ -831,6 +840,13 @@ func (r *Runtime) Shutdown(force bool) error {
 		r.workerGroup.Wait()
 		close(r.workerChannel)
 	}
+
+	// Stop the global rebind monitor (if the daemon started it) before the
+	// runtime is marked invalid, then wait for its goroutine to exit.
+	if r.rebindMonitorDone != nil {
+		close(r.rebindMonitorDone)
+	}
+	r.rebindMonitorGroup.Wait()
 
 	r.valid = false
 

@@ -31,6 +31,13 @@ func restService(flags *pflag.FlagSet, cfg *entities.PodmanConfig, opts entities
 		return err
 	}
 
+	// Start the global rebind monitor so device mounts declared with the
+	// `rebind` option (e.g. --device /dev/ttyACM0,rebind) are kept valid across
+	// a USB power cycle without a container restart. Only the daemon runs this;
+	// the CLI is a one-shot process and must not spawn the monitor. See
+	// libpod/device_monitor.go.
+	libpodRuntime.StartRebindMonitor()
+
 	if opts.URI == "" {
 		if _, found := os.LookupEnv("LISTEN_PID"); !found {
 			return errors.New("no service URI provided and socket activation protocol is not active")

@@ -43,6 +43,18 @@ func processOptionsInternal(options []string, isTmpfs bool, sourcePath string, g
 		// Some options have parameters - size, mode
 		key, _, _ := strings.Cut(opt, "=")
 
+		// x- prefixed options are pass-through options intended for the runtime.
+		// Podman must not validate or strip them. This is how podman's own
+		// persistent-device-mount feature records the source inode of a
+		// --device <src>,rebind mount as "x-podman-dev-ino=<dev>:<minor>:<ino>"
+		// so that `podman device reconcile` can detect a later re-enumeration;
+		// the option is relayed verbatim into the runtime spec. Rejecting it
+		// here (the switch default) would break that feature.
+		if strings.HasPrefix(opt, "x-") {
+			newOptions = append(newOptions, opt)
+			continue
+		}
+
 		// add advanced options such as upperdir=/path and workdir=/path, when overlay is specified
 		if foundOverlay {
 			if strings.Contains(opt, "upperdir") {
