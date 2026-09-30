@@ -1140,6 +1140,11 @@ func (c *Container) init(ctx context.Context, retainRetries bool) error {
 // Deletes the container in the runtime, and resets its state to Exited.
 // The container can be restarted cleanly after this.
 func (c *Container) cleanupRuntime(ctx context.Context) error {
+	// Forget the container with the daemon's global rebind monitor so it stops
+	// being reconciled once it is torn down (stop or remove). Safe to call
+	// unconditionally.
+	c.runtime.unregisterRebindContainer(c.ID())
+
 	// If the container is not ContainerStateStopped or
 	// ContainerStateCreated, do nothing.
 	if !c.ensureState(define.ContainerStateStopped, define.ContainerStateCreated) {
@@ -1324,6 +1329,14 @@ func (c *Container) start() error {
 	}
 
 	c.newContainerEvent(events.Start)
+
+	// Register the container's rebind devices with the daemon's global monitor
+	// so they are kept valid across a USB power cycle without a container
+	// restart. Safe to call unconditionally; a container without rebind
+	// devices is simply not registered.
+	if mounts, err := c.rebindDeviceMounts(); err == nil && len(mounts) > 0 {
+		c.runtime.registerRebindContainer(c, mounts)
+	}
 
 	return c.save()
 }

@@ -43,6 +43,7 @@ type ContainerEngine interface { //nolint:interfacebloat
 	ContainerRename(ctr context.Context, nameOrID string, options ContainerRenameOptions) error
 	ContainerRestart(ctx context.Context, namesOrIds []string, options RestartOptions) ([]*RestartReport, error)
 	ContainerRestore(ctx context.Context, namesOrIds []string, options RestoreOptions) ([]*RestoreReport, error)
+	ContainerReconcileDevices(ctx context.Context, namesOrIds []string, options ReconcileDevicesOptions) ([]*ReconcileDevicesReport, error)
 	ContainerRm(ctx context.Context, namesOrIds []string, options RmOptions) ([]*reports.RmReport, error)
 	ContainerRun(ctx context.Context, opts ContainerRunOptions) (*ContainerRunReport, error)
 	ContainerRunlabel(ctx context.Context, label string, image string, args []string, opts ContainerRunlabelOptions) error

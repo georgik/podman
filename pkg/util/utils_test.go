@@ -842,6 +842,20 @@ func TestProcessOptions(t *testing.T) {
 			expected:         []string{"nodev", "nosuid", "rbind", "ro", "rprivate"},
 			expectedNoCreate: false,
 		},
+		{
+			name:             "x- prefixed option is passed through verbatim",
+			sourcePath:       "/path/to/source",
+			options:          []string{"rw", "rbind", "x-podman-dev-ino=0:7:826"},
+			expected:         []string{"nodev", "nosuid", "rbind", "rprivate", "rw", "x-podman-dev-ino=0:7:826"},
+			expectedNoCreate: false,
+		},
+		{
+			name:             "x- prefixed pending option is passed through",
+			sourcePath:       "/path/to/source",
+			options:          []string{"ro", "x-podman-dev-pending"},
+			expected:         []string{"nodev", "nosuid", "rbind", "ro", "rprivate", "x-podman-dev-pending"},
+			expectedNoCreate: false,
+		},
 	}
 
 	for _, tt := range tests {

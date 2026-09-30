@@ -157,6 +157,41 @@ type RmOptions struct {
 	Volumes bool
 }
 
+// ReconcileDevicesOptions controls how `podman device reconcile` behaves.
+type ReconcileDevicesOptions struct {
+	// Watch keeps reconciling on an interval until interrupted.
+	Watch bool
+	// Interval is the period between reconcile passes when Watch is set.
+	Interval time.Duration
+	// Latest select the most recently created container.
+	Latest bool
+	// Ignore return success even when a named container does not exist.
+	Ignore bool
+}
+
+// ReconcileDeviceReport is the outcome of reconciling a single rebind device.
+type ReconcileDeviceReport struct {
+	// Src is the host source path of the device mount.
+	Src string
+	// Dst is the in-container path of the device mount.
+	Dst string
+	// Pending is true when the device was recorded as absent at container
+	// start and is not yet reconcilable.
+	Pending bool
+	// Rebounded is true when this pass re-attached the device to a fresh
+	// host inode (i.e. the device was re-enumerated since the last pass).
+	Rebounded bool
+	// Err is the reconciling error, if any.
+	Err string
+}
+
+// ReconcileDevicesReport is the result of reconciling a container's devices.
+type ReconcileDevicesReport struct {
+	ID      string
+	Name    string
+	Results []ReconcileDeviceReport
+}
+
 type ContainerInspectReport struct {
 	*define.InspectContainerData
 }
