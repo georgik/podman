@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"go.podman.io/common/pkg/completion"
+	"go.podman.io/podman/v6/cmd/podman/common"
 	"go.podman.io/podman/v6/cmd/podman/registry"
 	"go.podman.io/podman/v6/cmd/podman/validate"
 	"go.podman.io/podman/v6/pkg/domain/entities"
@@ -46,20 +48,21 @@ device (typically within a fraction of a second of a power-up), so no manual
 command is needed. This one-shot command reconciles immediately instead.`
 
 	reconcileCmd = &cobra.Command{
-		Use:   "reconcile <container> [container...]",
-		Short: "Rebind re-enumerated device mounts to their current host inode",
-		Long:  deviceReconcileDescription,
-		RunE:  reconcile,
-		Args:  cobra.MinimumNArgs(1),
-		Example: `  # reconcile a single container once
-  podman device reconcile myboard
+		Use:               "reconcile <container> [container...]",
+		Short:             "Rebind re-enumerated device mounts to their current host inode",
+		Long:              deviceReconcileDescription,
+		RunE:              reconcile,
+		Args:              cobra.MinimumNArgs(1),
+		ValidArgsFunction: common.AutocompleteContainers,
+		Example: `# reconcile a single container once
+podman device reconcile myboard
 
-  # reconcile several containers, never failing on a missing one
-  podman device reconcile --ignore board1 board2
+# reconcile several containers, never failing on a missing one
+podman device reconcile --ignore board1 board2
 
-  # manually watch a container (the automatic watcher already covers containers
-  # started with a ,rebind device; this is for ad-hoc / legacy containers)
-  podman device reconcile --watch --interval 250ms myboard`,
+# manually watch a container (the automatic watcher already covers containers
+# started with a ,rebind device; this is for ad-hoc / legacy containers)
+podman device reconcile --watch --interval 250ms myboard`,
 	}
 
 	reconcileOptions entities.ReconcileDevicesOptions
@@ -70,6 +73,7 @@ func init() {
 	reconcileCmd.Flags().DurationVar(&reconcileOptions.Interval, "interval", 250*time.Millisecond, "Interval between reconcile passes when --watch is set")
 	reconcileCmd.Flags().BoolVar(&reconcileOptions.Latest, "latest", false, "Reconcile the most recently created container")
 	reconcileCmd.Flags().BoolVar(&reconcileOptions.Ignore, "ignore", false, "Do not fail if a named container does not exist")
+	_ = reconcileCmd.RegisterFlagCompletionFunc("interval", completion.AutocompleteDefault)
 	// Reconcile performs mount operations, so it only makes sense in local
 	// (abi) mode; over the remote API the host would have to remount into the
 	// container's namespace, which the tunnel client cannot do.
